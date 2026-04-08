@@ -1,0 +1,2059 @@
+<!DOCTYPE html><html lang="zh-CN"><head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Kelivo 项目深度解析与技术指南</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&amp;family=Inter:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#64748b',
+                        accent: '#3b82f6',
+                        surface: '#f8fafc',
+                        muted: '#94a3b8'
+                    },
+                    fontFamily: {
+                        'serif': ['Noto Serif SC', 'serif'],
+                        'sans': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .gradient-text {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .glass-effect {
+            backdrop-filter: blur(10px);
+            background: rgba(248, 250, 252, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .toc-fixed {
+            position: fixed;
+            top: 2rem;
+            left: 2rem;
+            width: 280px;
+            max-height: calc(100vh - 4rem);
+            overflow-y: auto;
+            z-index: 50;
+        }
+        
+        .content-main {
+            margin-left: 320px;
+            max-width: 900px;
+        }
+        
+        .citation-link {
+            color: #3b82f6;
+            text-decoration: none;
+            font-size: 0.9em;
+            vertical-align: super;
+        }
+        
+        .citation-link:hover {
+            text-decoration: underline;
+        }
+        
+        .mermaid-container {
+            display: flex;
+            justify-content: center;
+            min-height: 300px;
+            max-height: 800px;
+            background: #ffffff;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 30px;
+            margin: 30px 0;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .mermaid-container .mermaid {
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            cursor: grab;
+            transition: transform 0.3s ease;
+            transform-origin: center center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .mermaid-container .mermaid svg {
+            max-width: 100%;
+            height: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .mermaid-container .mermaid:active {
+            cursor: grabbing;
+        }
+
+        .mermaid-container.zoomed .mermaid {
+            height: 100%;
+            width: 100%;
+            cursor: grab;
+        }
+
+        .mermaid-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 20;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 8px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .mermaid-control-btn {
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #374151;
+            font-size: 14px;
+            min-width: 36px;
+            height: 36px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mermaid-control-btn:hover {
+            background: #f8fafc;
+            border-color: #3b82f6;
+            color: #3b82f6;
+            transform: translateY(-1px);
+        }
+
+        .mermaid-control-btn:active {
+            transform: scale(0.95);
+        }
+        
+/* Mermaid diagram styling - improved contrast and styling */
+.mermaid svg {
+    max-width: 100%;
+    max-height: 100%;
+    height: auto;
+    font-family: 'Inter', sans-serif !important;
+    background: transparent;
+    border-radius: 8px;
+}
+
+/* Node styling with high contrast */
+.mermaid .node rect,
+.mermaid .node circle,
+.mermaid .node ellipse,
+.mermaid .node polygon {
+    stroke: #1e3a8a !important;
+    stroke-width: 2.5px !important;
+    filter: drop-shadow(0 2px 4px rgba(30, 58, 138, 0.15));
+}
+
+/* Default node fill - improved contrast */
+.mermaid .node rect {
+    fill: #ffffff !important;
+}
+
+/* Different node type colors with proper contrast */
+.mermaid .node:nth-child(4n+1) rect {
+    fill: #dbeafe !important;
+    stroke: #1e40af !important;
+}
+
+.mermaid .node:nth-child(4n+2) rect {
+    fill: #dcfce7 !important;
+    stroke: #166534 !important;
+}
+
+.mermaid .node:nth-child(4n+3) rect {
+    fill: #fef3c7 !important;
+    stroke: #d97706 !important;
+}
+
+.mermaid .node:nth-child(4n+4) rect {
+    fill: #fce7f3 !important;
+    stroke: #be185d !important;
+}
+
+/* Node text styling with high contrast */
+.mermaid .node .label,
+.mermaid .nodeLabel {
+    color: #1f2937 !important;
+    font-weight: 600 !important;
+    font-size: 14px !important;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+    dominant-baseline: middle;
+}
+
+/* Edge styling - improved visibility */
+.mermaid .edgePath .path {
+    stroke: #3b82f6 !important;
+    stroke-width: 2.5px !important;
+    filter: drop-shadow(0 1px 2px rgba(59, 130, 246, 0.2));
+}
+
+.mermaid .arrowheadPath {
+    fill: #3b82f6 !important;
+    stroke: #3b82f6 !important;
+}
+
+/* Edge labels */
+.mermaid .edgeLabel {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    color: #1f2937 !important;
+    font-weight: 500 !important;
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    border: 1px solid #d1d5db !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+    font-size: 12px !important;
+}
+
+/* Subgraph styling */
+.mermaid .cluster rect {
+    fill: rgba(248, 250, 252, 0.9) !important;
+    stroke: #64748b !important;
+    stroke-width: 2px !important;
+    stroke-dasharray: 8,4 !important;
+    rx: 12 !important;
+}
+
+.mermaid .cluster .label {
+    color: #374151 !important;
+    font-weight: 600 !important;
+    font-size: 16px !important;
+}
+
+/* Special node styling for different types */
+.mermaid .node.startNode rect,
+.mermaid .node.startNode circle {
+    fill: #dcfce7 !important;
+    stroke: #16a34a !important;
+    stroke-width: 3px !important;
+}
+
+.mermaid .node.endNode rect,
+.mermaid .node.endNode circle {
+    fill: #fef2f2 !important;
+    stroke: #dc2626 !important;
+    stroke-width: 3px !important;
+}
+
+/* Ensure proper text contrast for all node types */
+.mermaid .node text,
+.mermaid .node .label,
+.mermaid .nodeLabel {
+    fill: #1f2937 !important;
+    dominant-baseline: middle;
+    text-anchor: middle;
+}
+        
+        @media (max-width: 1280px) {
+            .toc-fixed {
+                position: relative;
+                width: 100%;
+                margin-bottom: 2rem;
+            }
+            .content-main {
+                margin-left: 0;
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .mermaid-control-btn:not(.reset-zoom) {
+                display: none;
+            }
+            .mermaid-controls {
+                top: auto;
+                bottom: 15px;
+                right: 15px;
+            }
+            .toc-fixed {
+                display: none;
+            }
+        }
+    </style>
+  <base target="_blank">
+</head>
+
+  <body class="bg-surface font-sans text-gray-800 leading-relaxed">
+
+    <!-- Fixed Table of Contents -->
+    <nav class="toc-fixed glass-effect rounded-xl p-6 shadow-lg">
+      <h3 class="font-serif font-bold text-lg mb-4 text-primary">目录导航</h3>
+      <ul class="space-y-2 text-sm">
+        <li>
+          <a href="#overview" class="hover:text-accent transition-colors">项目概述与定位</a>
+        </li>
+        <li>
+          <a href="#structure" class="hover:text-accent transition-colors">项目目录结构</a>
+        </li>
+        <li>
+          <a href="#build-guide" class="hover:text-accent transition-colors">构建与编译指南</a>
+        </li>
+        <li>
+          <a href="#flutter-fundamentals" class="hover:text-accent transition-colors">Flutter 核心概念</a>
+        </li>
+        <li>
+          <a href="#development-env" class="hover:text-accent transition-colors">开发环境搭建</a>
+        </li>
+        <li>
+          <a href="#components-layout" class="hover:text-accent transition-colors">常用组件与布局</a>
+        </li>
+        <li>
+          <a href="#routing" class="hover:text-accent transition-colors">路由与导航管理</a>
+        </li>
+        <li>
+          <a href="#plugins" class="hover:text-accent transition-colors">插件生态系统</a>
+        </li>
+        <li>
+          <a href="#state-management" class="hover:text-accent transition-colors">状态管理架构</a>
+        </li>
+        <li>
+          <a href="#api-integration" class="hover:text-accent transition-colors">API 交互设计</a>
+        </li>
+        <li>
+          <a href="#core-modules" class="hover:text-accent transition-colors">核心功能模块</a>
+        </li>
+        <li>
+          <a href="#best-practices" class="hover:text-accent transition-colors">出行/配送类最佳实践</a>
+        </li>
+        <li>
+          <a href="#technical-details" class="hover:text-accent transition-colors">特定技术实现</a>
+        </li>
+      </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="content-main px-8 py-12">
+
+      <!-- Hero Section -->
+      <header class="mb-16">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+          <!-- Main Title -->
+          <div class="lg:col-span-2">
+            <h1 class="font-serif text-3xl sm:text-4xl md:text-5xl font-bold mb-6 gradient-text italic leading-snug">
+              Kelivo 项目深度解析
+              <br/>
+              <span class="text-2xl sm:text-3xl md:text-4xl">与 Flutter 技术实践</span>
+            </h1>
+            <p class="text-xl text-secondary leading-relaxed">
+              基于 Flutter 3.x 的跨平台 LLM 聊天客户端技术架构与实现指南
+            </p>
+          </div>
+
+          <!-- Key Metrics -->
+          <div class="glass-effect rounded-xl p-6">
+            <h3 class="font-serif font-bold text-lg mb-4 text-primary">项目指标</h3>
+            <div class="space-y-3">
+              <div class="flex justify-between">
+                <span class="text-muted">GitHub Stars</span>
+                <span class="font-semibold">2,000+</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted">支持平台</span>
+                <span class="font-semibold">6个</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted">AI 服务商</span>
+                <span class="font-semibold">5+</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-muted">Dart 代码占比</span>
+                <span class="font-semibold">96.3%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visual Element -->
+        <div class="relative h-64 bg-gradient-to-br from-primary/10 to-accent/5 rounded-xl overflow-hidden">
+          <img src="https://kimi-web-img.moonshot.cn/img/camo.githubusercontent.com/713c8fe98a02d9e9a3e5794285fc38a9454219b9" alt="Flutter跨平台应用架构示意图" class="w-full h-full object-cover opacity-60" size="wallpaper" aspect="wide" query="Flutter 应用架构" referrerpolicy="no-referrer" data-modified="1" data-score="0.00"/>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="glass-effect rounded-lg px-6 py-4">
+              <p class="font-serif text-xl italic text-primary">
+                &#34;打破 AI 服务生态壁垒，实现多提供商自由切换&#34;
+              </p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Project Overview -->
+      <section id="overview" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">项目概述与定位</h2>
+
+        <div class="prose prose-lg max-w-none">
+          <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+            <h3 class="font-serif text-xl font-semibold mb-4">项目基本信息</h3>
+            <p class="mb-4">
+              Kelivo 是一个基于 <strong>Flutter 3.x 框架</strong>开发的开源大型语言模型（LLM）聊天客户端，由开发者 Chevey339 主导维护。截至 2025 年，该项目在 GitHub 上已获得超过 <strong>2000 个星标</strong>和 <strong>200 余个分支</strong>
+              <a href="https://github.com/Chevey339/kelivo" class="citation-link">[34]</a>，显示出较强的社区活跃度。
+            </p>
+
+            <p class="mb-4">
+              项目的核心定位并非简单的聊天工具封装，而是一个<strong>企业级的多 AI 服务集成平台</strong>，通过抽象化的架构设计，实现了对多种主流 LLM 提供商的无缝接入。与市面上单一服务商的聊天应用不同，Kelivo 的最大特色在于其<strong>&#34;多提供商自由切换&#34;</strong>架构<a href="https://github.com/Chevey339/kelivo" class="citation-link">[135]</a>。
+            </p>
+          </div>
+
+          <!-- Core Features Grid -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-xl p-6 shadow-sm border">
+              <h4 class="font-semibold text-primary mb-3">多模态对话</h4>
+              <p class="text-sm text-secondary">支持文本、图片、PDF、Word 混合输入，通过文件预处理和 Vision API 实现</p>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-sm border">
+              <h4 class="font-semibold text-primary mb-3">Markdown 富文本</h4>
+              <p class="text-sm text-secondary">代码高亮、LaTeX 公式、表格渲染，基于 flutter_markdown 扩展</p>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-sm border">
+              <h4 class="font-semibold text-primary mb-3">语音交互</h4>
+              <p class="text-sm text-secondary">系统 TTS + 云端语音合成，支持流式接收和队列管理</p>
+            </div>
+            <div class="bg-white rounded-xl p-6 shadow-sm border">
+              <h4 class="font-semibold text-primary mb-3">MCP 工具调用</h4>
+              <p class="text-sm text-secondary">Model Context Protocol 标准支持，可扩展外部工具链<a href="https://github.com/Chevey339/kelivo" class="citation-link">[135]</a>
+              </p>
+            </div>
+          </div>
+
+          <!-- Platform Support -->
+          <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+            <h3 class="font-serif text-xl font-semibold mb-6">支持平台矩阵</h3>
+            <div class="overflow-x-auto">
+              <table class="w-full text-sm">
+                <thead>
+                  <tr class="border-b">
+                    <th class="text-left py-3 font-semibold">平台</th>
+                    <th class="text-center py-3 font-semibold">支持状态</th>
+                    <th class="text-left py-3 font-semibold">分发渠道</th>
+                    <th class="text-left py-3 font-semibold">特殊说明</th>
+                  </tr>
+                </thead>
+                <tbody class="text-secondary">
+                  <tr class="border-b">
+                    <td class="py-3 font-medium">Android</td>
+                    <td class="py-3 text-center text-green-600">✅ 完全支持</td>
+                    <td class="py-3">Google Play、GitHub Releases、F-Droid</td>
+                    <td class="py-3">Material You 动态主题（API 31+）</td>
+                  </tr>
+                  <tr class="border-b">
+                    <td class="py-3 font-medium">iOS</td>
+                    <td class="py-3 text-center text-green-600">✅ 完全支持</td>
+                    <td class="py-3">App Store、TestFlight</td>
+                    <td class="py-3">完整审核通过，TestFlight 公测可用</td>
+                  </tr>
+                  <tr class="border-b">
+                    <td class="py-3 font-medium">Windows</td>
+                    <td class="py-3 text-center text-green-600">✅ 完全支持</td>
+                    <td class="py-3">Microsoft Store、GitHub Releases</td>
+                    <td class="py-3">MSIX 打包，自动更新集成</td>
+                  </tr>
+                  <tr class="border-b">
+                    <td class="py-3 font-medium">macOS</td>
+                    <td class="py-3 text-center text-green-600">✅ 完全支持</td>
+                    <td class="py-3">Mac App Store、GitHub Releases</td>
+                    <td class="py-3">Notarization 公证，DMG 分发</td>
+                  </tr>
+                  <tr class="border-b">
+                    <td class="py-3 font-medium">Linux</td>
+                    <td class="py-3 text-center text-green-600">✅ 完全支持</td>
+                    <td class="py-3">Snap、Flatpak、AppImage、软件中心</td>
+                    <td class="py-3">多格式覆盖主流发行版</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3 font-medium">OpenHarmony</td>
+                    <td class="py-3 text-center text-yellow-600">⚠️ 适配中</td>
+                    <td class="py-3">鸿蒙应用市场（规划中）</td>
+                    <td class="py-3">独立分支 kelivo-ohos，部分功能降级<a href="https://github.com/Chevey339/kelivo-ohos" class="citation-link">[154]</a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Project Structure -->
+      <section id="structure" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">项目目录结构详解</h2>
+
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">核心架构分层</h3>
+          <div class="mermaid-container">
+            <div class="mermaid-controls">
+              <button class="mermaid-control-btn zoom-in" title="放大">
+                <i class="fas fa-search-plus"></i>
+              </button>
+              <button class="mermaid-control-btn zoom-out" title="缩小">
+                <i class="fas fa-search-minus"></i>
+              </button>
+              <button class="mermaid-control-btn reset-zoom" title="重置">
+                <i class="fas fa-expand-arrows-alt"></i>
+              </button>
+              <button class="mermaid-control-btn fullscreen" title="全屏查看">
+                <i class="fas fa-expand"></i>
+              </button>
+            </div>
+            <div class="mermaid">
+              graph TD
+              A[&#34;Presentation Layer
+              <br/>UI Widgets&#34;] --&gt; B[&#34;Business Logic Layer
+              <br/>Providers&#34;]
+              B --&gt; C[&#34;Data Access Layer
+              <br/>Repositories&#34;]
+              C --&gt; D[&#34;Infrastructure Layer
+              <br/>Network/Storage&#34;]
+
+              E[&#34;Features/&#34;] --&gt; F[&#34;Chat/
+              <br/>Models/Providers/Services&#34;]
+              E --&gt; G[&#34;Settings/
+              <br/>Configuration&#34;]
+              E --&gt; H[&#34;Models/
+              <br/>AI Service Integration&#34;]
+
+              I[&#34;Core/&#34;] --&gt; J[&#34;Network/
+              <br/>Dio Configuration&#34;]
+              I --&gt; K[&#34;Storage/
+              <br/>Hive/SharedPreferences&#34;]
+              I --&gt; L[&#34;Logger/
+              <br/>Logging System&#34;]
+
+              style A fill:#dbeafe,stroke:#1e40af,stroke-width:2px,color:#1f2937
+              style B fill:#dcfce7,stroke:#166534,stroke-width:2px,color:#1f2937
+              style C fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#1f2937
+              style D fill:#fce7f3,stroke:#be185d,stroke-width:2px,color:#1f2937
+              style E fill:#f0f9ff,stroke:#0284c7,stroke-width:2px,color:#1f2937
+              style F fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#1f2937
+              style G fill:#fefce8,stroke:#ca8a04,stroke-width:2px,color:#1f2937
+              style H fill:#fdf2f8,stroke:#be185d,stroke-width:2px,color:#1f2937
+              style I fill:#faf5ff,stroke:#9333ea,stroke-width:2px,color:#1f2937
+              style J fill:#f0f9ff,stroke:#0284c7,stroke-width:2px,color:#1f2937
+              style K fill:#f0fdf4,stroke:#16a34a,stroke-width:2px,color:#1f2937
+              style L fill:#fefce8,stroke:#ca8a04,stroke-width:2px,color:#1f2937
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Module Structure -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">聊天模块结构</h3>
+          <div class="bg-gray-50 rounded-lg p-6 font-mono text-sm">
+            <div class="text-gray-600">lib/features/chat/</div>
+            <div class="ml-4">├── models/</div>
+            <div class="ml-8">│ ├── message.dart # 消息数据模型</div>
+            <div class="ml-8">│ ├── conversation.dart # 会话模型</div>
+            <div class="ml-8">│ └── attachment.dart # 附件模型</div>
+            <div class="ml-4">├── providers/</div>
+            <div class="ml-8">│ ├── chat_provider.dart # 核心状态管理</div>
+            <div class="ml-8">│ └── conversation_provider.dart # 会话管理</div>
+            <div class="ml-4">├── services/</div>
+            <div class="ml-8">│ ├── llm_service.dart # 抽象接口</div>
+            <div class="ml-8">│ ├── streaming_handler.dart # SSE 流处理</div>
+            <div class="ml-8">│ └── context_compressor.dart # 上下文压缩</div>
+            <div class="ml-4">├── widgets/</div>
+            <div class="ml-8">│ ├── chat_message_list.dart # 消息列表</div>
+            <div class="ml-8">│ ├── chat_input_bar.dart # 输入栏</div>
+            <div class="ml-8">│ ├── message_bubble.dart # 消息气泡</div>
+            <div class="ml-8">│ ├── code_block.dart # 代码块渲染</div>
+            <div class="ml-8">│ ├── markdown_body.dart # Markdown 渲染</div>
+            <div class="ml-8">│ └── thinking_indicator.dart # 思考指示器</div>
+            <div class="ml-4">└── screens/</div>
+            <div class="ml-8">├── chat_screen.dart # 主聊天页面</div>
+            <div class="ml-8">└── conversation_list_screen.dart # 会话列表</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Build Guide -->
+      <section id="build-guide" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">构建与编译指南</h2>
+
+        <!-- Environment Setup -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">环境准备</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">Flutter SDK 要求</h4>
+              <div class="bg-gray-50 rounded-lg p-4 mb-4">
+                <div class="font-mono text-sm">
+                  <div class="text-green-600">✓ Flutter 3.8.1+</div>
+                  <div class="text-green-600">✓ Dart 3.0.0+</div>
+                </div>
+              </div>
+              <p class="text-sm text-secondary">验证安装：
+                <code>flutter doctor</code>
+              </p>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">平台工具链</h4>
+              <ul class="text-sm text-secondary space-y-1">
+                <li>• Android: Android Studio, SDK API 33+</li>
+                <li>• iOS: Xcode 15+, CocoaPods</li>
+                <li>• Windows: Visual Studio 2022</li>
+                <li>• macOS: Xcode 15+</li>
+                <li>• Linux: Clang, CMake, Ninja</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Dependency Setup -->
+          <div class="bg-gray-50 rounded-lg p-6">
+            <h4 class="font-semibold mb-3">依赖预加载</h4>
+            <div class="font-mono text-sm bg-gray-800 text-green-400 p-4 rounded">
+              cd kelivo
+              <br/>
+              flutter pub get
+            </div>
+            <p class="text-sm text-secondary mt-2">中国大陆开发者建议配置镜像：
+              <code>export PUB_HOSTED_URL=https://pub.flutter-io.cn</code>
+            </p>
+          </div>
+        </div>
+
+        <!-- Build Commands -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">发布构建命令</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">Android</h4>
+              <div class="font-mono text-sm bg-gray-50 p-4 rounded">
+                <div># 调试 APK</div>
+                <div class="text-blue-600">flutter build apk --debug</div>
+                <div class="mt-2"># 发布 AAB</div>
+                <div class="text-blue-600">flutter build appbundle --release</div>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">iOS</h4>
+              <div class="font-mono text-sm bg-gray-50 p-4 rounded">
+                <div># 构建 release</div>
+                <div class="text-blue-600">flutter build ios --release</div>
+                <div class="mt-2"># 后续 Xcode Archive</div>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">Windows</h4>
+              <div class="font-mono text-sm bg-gray-50 p-4 rounded">
+                <div># MSIX 打包</div>
+                <div class="text-blue-600">flutter build windows --release</div>
+                <div class="mt-2"># 自动更新集成</div>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">OpenHarmony</h4>
+              <div class="font-mono text-sm bg-gray-50 p-4 rounded">
+                <div># 鸿蒙适配分支</div>
+                <div class="text-blue-600">git clone kelivo-ohos</div>
+                <div class="text-blue-600">flutter build app --release</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Flutter Fundamentals -->
+      <section id="flutter-fundamentals" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">Flutter 核心概念与特性</h2>
+
+        <!-- Key Concepts Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div class="bg-white rounded-xl p-6 shadow-sm border">
+            <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+              <i class="fas fa-layer-group text-blue-600"></i>
+            </div>
+            <h3 class="font-semibold text-lg mb-3">一切皆 Widget</h3>
+            <p class="text-sm text-secondary">UI 组件化与组合式构建，从简单的 Text 到复杂的 ListView 都是 Widget</p>
+          </div>
+
+          <div class="bg-white rounded-xl p-6 shadow-sm border">
+            <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+              <i class="fas fa-sync-alt text-green-600"></i>
+            </div>
+            <h3 class="font-semibold text-lg mb-3">声明式编程</h3>
+            <p class="text-sm text-secondary">状态驱动 UI 自动更新，框架负责状态变化时的自动同步</p>
+          </div>
+
+          <div class="bg-white rounded-xl p-6 shadow-sm border">
+            <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+              <i class="fas fa-paint-brush text-purple-600"></i>
+            </div>
+            <h3 class="font-semibold text-lg mb-3">自绘引擎</h3>
+            <p class="text-sm text-secondary">Skia/Impeller 跨平台渲染一致性，像素级相同的视觉效果</p>
+          </div>
+        </div>
+
+        <!-- Hot Reload Section -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">热重载（Hot Reload）</h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">工作原理</h4>
+              <ul class="text-sm text-secondary space-y-2">
+                <li>• <strong>JIT 编译</strong>：开发模式 Dart VM 执行字节码</li>
+                <li>• <strong>状态保持</strong>：重建 Widget 树，保留 State 对象</li>
+                <li>• <strong>毫秒级反馈</strong>：增量编译 + 增量传输</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">Kelivo 应用场景</h4>
+              <ul class="text-sm text-secondary space-y-2">
+                <li>• 调整消息气泡圆角 → 保存 → 立即查看效果</li>
+                <li>• 修改主题色值 → 实时预览</li>
+                <li>• 优化动画曲线 → 反复微调至满意</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Development Environment -->
+      <section id="development-env" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">开发环境搭建</h2>
+
+        <!-- IDE Setup -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">IDE 选择与配置</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="border rounded-lg p-4">
+              <div class="flex items-center mb-3">
+                <i class="fab fa-vscode text-blue-600 text-xl mr-3"></i>
+                <h4 class="font-semibold">VS Code</h4>
+              </div>
+              <p class="text-sm text-secondary mb-3">轻量快速、插件丰富</p>
+              <ul class="text-xs text-secondary space-y-1">
+                <li>• Flutter 插件</li>
+                <li>• Awesome Flutter Snippets</li>
+                <li>• Error Lens</li>
+              </ul>
+            </div>
+
+            <div class="border rounded-lg p-4">
+              <div class="flex items-center mb-3">
+                <i class="fas fa-code text-green-600 text-xl mr-3"></i>
+                <h4 class="font-semibold">Android Studio</h4>
+              </div>
+              <p class="text-sm text-secondary mb-3">官方支持、重构强大</p>
+              <ul class="text-xs text-secondary space-y-1">
+                <li>• Flutter/Dart 插件</li>
+                <li>• 布局编辑器</li>
+                <li>• .env 文件支持</li>
+              </ul>
+            </div>
+
+            <div class="border rounded-lg p-4">
+              <div class="flex items-center mb-3">
+                <i class="fas fa-diamond text-purple-600 text-xl mr-3"></i>
+                <h4 class="font-semibold">IntelliJ IDEA</h4>
+              </div>
+              <p class="text-sm text-secondary mb-3">企业级功能、多语言支持</p>
+              <ul class="text-xs text-secondary space-y-1">
+                <li>• 同 Android Studio</li>
+                <li>• 企业级特性</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Version Management -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">SDK 版本管理</h3>
+
+          <div class="bg-gray-50 rounded-lg p-6">
+            <h4 class="font-semibold mb-3 text-primary">fvm 推荐配置</h4>
+            <div class="font-mono text-sm bg-gray-800 text-green-400 p-4 rounded mb-4">
+              # 安装 fvm
+              <br/>
+              dart pub global activate fvm
+              <br/>
+              <br/>
+              # 项目级版本锁定
+              <br/>
+              cd kelivo
+              <br/>
+              fvm install 3.8.1
+              <br/>
+              fvm use 3.8.1
+            </div>
+            <p class="text-sm text-secondary">
+              创建 <code>.fvm/fvm_config.json</code> 纳入版本控制，确保团队环境一致
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Components &amp; Layout -->
+      <section id="components-layout" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">常用组件与布局系统</h2>
+
+        <!-- Layout Components -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">核心布局组件</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h4 class="font-semibold mb-4 text-primary">基础布局</h4>
+              <div class="space-y-4">
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <div class="font-mono text-sm font-semibold mb-2">Row / Column</div>
+                  <p class="text-sm text-secondary">线性排列，用于工具栏按钮横向排列</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <div class="font-mono text-sm font-semibold mb-2">Stack</div>
+                  <p class="text-sm text-secondary">层叠布局，消息气泡上的引用标记</p>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                  <div class="font-mono text-sm font-semibold mb-2">Expanded / Flexible</div>
+                  <p class="text-sm text-secondary">空间分配，输入框与发送按钮比例</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-4 text-primary">响应式布局</h4>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="font-mono text-sm font-semibold mb-2">LayoutBuilder</div>
+                <div class="text-sm text-secondary mb-3">断点系统实现</div>
+                <div class="font-mono text-xs bg-gray-800 text-green-400 p-3 rounded">
+                  final width = MediaQuery.size.width;
+                  <br/>
+                  return switch (width) {
+                  <br/>
+                  &lt; 600 =&gt; MobileLayout(),
+                  <br/>
+                  &lt; 900 =&gt; TabletLayout(),
+                  <br/>
+                  _ =&gt; DesktopLayout(),
+                  <br/>
+                  };
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Interface Implementation -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">聊天界面专项实现</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">消息气泡渲染</h4>
+              <p class="text-sm text-secondary mb-3">CustomPainter + ShapeDecoration 实现带&#34;尾巴&#34;的不规则气泡</p>
+              <div class="bg-gray-50 rounded p-3">
+                <div class="text-xs text-gray-600 mb-1">实现方案对比：</div>
+                <ul class="text-xs text-secondary space-y-1">
+                  <li>• BorderRadius: 仅圆角矩形</li>
+                  <li>• ShapeDecoration: 自定义路径（主要方案）</li>
+                  <li>• CustomPainter: 完全自由（特殊效果）</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">代码高亮</h4>
+              <p class="text-sm text-secondary mb-3">flutter_highlight 集成，支持 180+ 编程语言</p>
+              <div class="bg-gray-50 rounded p-3">
+                <div class="text-xs text-gray-600 mb-1">自定义功能：</div>
+                <ul class="text-xs text-secondary space-y-1">
+                  <li>• 行号显示</li>
+                  <li>• 复制按钮</li>
+                  <li>• 语言标签</li>
+                  <li>• 多主题支持</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">Markdown 渲染</h4>
+              <p class="text-sm text-secondary mb-3">flutter_markdown + 自定义元素构建器</p>
+              <div class="bg-gray-50 rounded p-3">
+                <div class="text-xs text-gray-600 mb-1">扩展支持：</div>
+                <ul class="text-xs text-secondary space-y-1">
+                  <li>• 代码块（code）</li>
+                  <li>• 数学公式（latex）</li>
+                  <li>• 流程图（mermaid）</li>
+                </ul>
+              </div>
+            </div>
+
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">图片与文件预览</h4>
+              <p class="text-sm text-secondary mb-3">Hero 动画 + photo_view 实现流畅预览</p>
+              <div class="bg-gray-50 rounded p-3">
+                <div class="text-xs text-gray-600 mb-1">交互特性：</div>
+                <ul class="text-xs text-secondary space-y-1">
+                  <li>• 点击放大</li>
+                  <li>• 双指缩放</li>
+                  <li>• 左右滑动切换</li>
+                  <li>• 文件类型识别</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Routing -->
+      <section id="routing" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">路由与导航管理</h2>
+
+        <!-- Routing Scheme -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">路由方案选型</h3>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b">
+                  <th class="text-left py-3 font-semibold">方案</th>
+                  <th class="text-left py-3 font-semibold">特点</th>
+                  <th class="text-left py-3 font-semibold">适用场景</th>
+                  <th class="text-left py-3 font-semibold">Kelivo 选择</th>
+                </tr>
+              </thead>
+              <tbody class="text-secondary">
+                <tr class="border-b">
+                  <td class="py-3 font-medium">MaterialApp.routes</td>
+                  <td class="py-3">静态配置、简单直观</td>
+                  <td class="py-3">页面少、无复杂参数</td>
+                  <td class="py-3 text-green-600">基础配置</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-3 font-medium">Navigator 1.0</td>
+                  <td class="py-3">动态灵活、栈操作</td>
+                  <td class="py-3">需要手动控制返回栈</td>
+                  <td class="py-3 text-green-600">部分使用</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-3 font-medium">go_router</td>
+                  <td class="py-3">深层链接、路径参数</td>
+                  <td class="py-3">需要 URL 路由、Web 支持</td>
+                  <td class="py-3 text-red-500">未采用</td>
+                </tr>
+                <tr>
+                  <td class="py-3 font-medium">auto_route</td>
+                  <td class="py-3">代码生成、类型安全</td>
+                  <td class="py-3">大型项目、复杂导航</td>
+                  <td class="py-3 text-red-500">未采用</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Route Hierarchy -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">页面层级结构</h3>
+
+          <div class="bg-gray-50 rounded-lg p-6 font-mono text-sm">
+            <div class="text-gray-600">/</div>
+            <div class="ml-4">├── /chat/:conversationId # 主聊天页</div>
+            <div class="ml-4">├── /settings # 设置主页</div>
+            <div class="ml-8">│ ├── /settings/appearance # 外观设置</div>
+            <div class="ml-8">│ ├── /settings/language # 语言设置</div>
+            <div class="ml-8">│ └── /settings/providers # 模型提供商配置</div>
+            <div class="ml-4">└── /onboarding # 首次启动引导</div>
+          </div>
+
+          <div class="mt-6">
+            <h4 class="font-semibold mb-3 text-primary">路由守卫</h4>
+            <div class="bg-gray-50 rounded-lg p-4">
+              <div class="font-mono text-sm">MaterialApp(</div>
+              <div class="font-mono text-sm ml-4">initialRoute: hasAnyProvider() ? &#39;/&#39; : &#39;/onboarding&#39;,</div>
+              <div class="font-mono text-sm">)</div>
+            </div>
+            <p class="text-sm text-secondary mt-2">无 API 密钥配置时，强制跳转引导页面</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Plugins -->
+      <section id="plugins" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">插件生态系统与关键依赖</h2>
+
+        <!-- Core Plugins -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">核心功能插件</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">网络通信</h4>
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span>dio</span>
+                  <span class="text-muted">^5.4.0</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span>web_socket_channel</span>
+                  <span class="text-muted">^2.4.0</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">本地存储</h4>
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span>shared_preferences</span>
+                  <span class="text-muted">^2.2.2</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span>hive</span>
+                  <span class="text-muted">^2.2.3</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span>hive_flutter</span>
+                  <span class="text-muted">^1.1.0</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">文件处理</h4>
+              <div class="space-y-2">
+                <div class="flex justify-between text-sm">
+                  <span>image_picker</span>
+                  <span class="text-muted">^1.0.7</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span>file_picker</span>
+                  <span class="text-muted">^6.1.1</span>
+                </div>
+                <div class="flex justify-between text-sm">
+                  <span>path_provider</span>
+                  <span class="text-muted">^2.1.1</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Desktop Plugins -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">桌面端专属插件</h3>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="border-b">
+                  <th class="text-left py-3 font-semibold">插件</th>
+                  <th class="text-left py-3 font-semibold">版本</th>
+                  <th class="text-left py-3 font-semibold">功能</th>
+                  <th class="text-left py-3 font-semibold">平台</th>
+                </tr>
+              </thead>
+              <tbody class="text-secondary">
+                <tr class="border-b">
+                  <td class="py-3 font-medium">window_manager</td>
+                  <td class="py-3">^0.3.7</td>
+                  <td class="py-3">窗口管理、尺寸、位置、置顶</td>
+                  <td class="py-3">全桌面平台</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-3 font-medium">tray_manager</td>
+                  <td class="py-3">^0.2.2</td>
+                  <td class="py-3">系统托盘图标、右键菜单</td>
+                  <td class="py-3">全桌面平台</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-3 font-medium">desktop_drop</td>
+                  <td class="py-3">^0.4.4</td>
+                  <td class="py-3">文件拖放进入应用窗口</td>
+                  <td class="py-3">全桌面平台</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-3 font-medium">hotkey_manager</td>
+                  <td class="py-3">^0.1.7</td>
+                  <td class="py-3">全局快捷键注册</td>
+                  <td class="py-3">全桌面平台</td>
+                </tr>
+                <tr>
+                  <td class="py-3 font-medium">screen_retriever</td>
+                  <td class="py-3">^0.1.9</td>
+                  <td class="py-3">多显示器信息获取</td>
+                  <td class="py-3">全桌面平台</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- State Management -->
+      <section id="state-management" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">状态管理架构</h2>
+
+        <!-- Provider Architecture -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">Provider 架构分层</h3>
+
+          <div class="mermaid-container">
+            <div class="mermaid-controls">
+              <button class="mermaid-control-btn zoom-in" title="放大">
+                <i class="fas fa-search-plus"></i>
+              </button>
+              <button class="mermaid-control-btn zoom-out" title="缩小">
+                <i class="fas fa-search-minus"></i>
+              </button>
+              <button class="mermaid-control-btn reset-zoom" title="重置">
+                <i class="fas fa-expand-arrows-alt"></i>
+              </button>
+              <button class="mermaid-control-btn fullscreen" title="全屏查看">
+                <i class="fas fa-expand"></i>
+              </button>
+            </div>
+            <div class="mermaid">
+              graph TD
+              A[&#34;UI Layer
+              <br/>Widgets&#34;] --&gt; B[&#34;ChangeNotifier
+              <br/>Provider&#34;]
+              B --&gt; C[&#34;Service Layer
+              <br/>Business Logic&#34;]
+              C --&gt; D[&#34;Repository Layer
+              <br/>Data Abstraction&#34;]
+              D --&gt; E[&#34;Data Source
+              <br/>API / Local DB / Cache&#34;]
+
+              style A fill:#dbeafe,stroke:#1e40af,stroke-width:2px,color:#1f2937
+              style B fill:#dcfce7,stroke:#166534,stroke-width:2px,color:#1f2937
+              style C fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#1f2937
+              style D fill:#fce7f3,stroke:#be185d,stroke-width:2px,color:#1f2937
+              style E fill:#f1f5f9,stroke:#475569,stroke-width:2px,color:#1f2937
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat Provider Implementation -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">聊天状态管理：ChatProvider</h3>
+
+          <div class="bg-gray-50 rounded-lg p-6 font-mono text-sm">
+            <div class="text-gray-600 mb-2">流式响应处理核心逻辑：</div>
+            <div class="text-green-600">1. 添加用户消息，设置加载状态</div>
+            <div class="text-blue-600">2. 调用 LLM 服务获取流</div>
+            <div class="text-purple-600">3. 创建 AI 消息占位符</div>
+            <div class="text-orange-600">4. 监听流更新，实时追加内容</div>
+            <div class="text-red-600">5. 错误处理和状态清理</div>
+          </div>
+
+          <div class="mt-6">
+            <h4 class="font-semibold mb-3 text-primary">性能优化</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="font-mono text-sm font-semibold mb-2">Selector 优化</div>
+                <p class="text-xs text-secondary">使用 Selector 替代 Consumer，避免整树重建</p>
+              </div>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="font-mono text-sm font-semibold mb-2">ValueNotifier</div>
+                <p class="text-xs text-secondary">局部更新优化，消息列表流畅滚动</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- API Integration -->
+      <section id="api-integration" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">API 交互与网络层设计</h2>
+
+        <!-- Multi-Provider Architecture -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">多服务商抽象架构</h3>
+
+          <div class="bg-gray-50 rounded-lg p-6 font-mono text-sm mb-6">
+            <div class="text-gray-600 mb-2">抽象接口定义：</div>
+            <div class="text-blue-600">abstract class LLMService {</div>
+            <div class="ml-4 text-green-600">Future&lt;Stream&lt;String&gt;&gt; streamMessage(...);</div>
+            <div class="ml-4 text-green-600">Future&lt;List&lt;AIModel&gt;&gt; getModels();</div>
+            <div class="ml-4 text-green-600">Future&lt;int&gt; countTokens(String text);</div>
+            <div class="ml-4 text-green-600">Future&lt;bool&gt; validateConfig();</div>
+            <div class="text-blue-600">}</div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">OpenAI 实现</h4>
+              <ul class="text-sm text-secondary space-y-1">
+                <li>• HTTP + SSE 协议</li>
+                <li>• Bearer Token 认证</li>
+                <li>• 组织 ID 可选</li>
+                <li>• 函数调用支持</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">Claude 实现</h4>
+              <ul class="text-sm text-secondary space-y-1">
+                <li>• x-api-key 头认证</li>
+                <li>• 系统提示词单独字段</li>
+                <li>• thinking 块处理</li>
+                <li>• API 版本管理</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stream Processing -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">流式响应处理</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="border rounded-lg p-4">
+              <h4 class="font-semibold mb-3 text-primary">SSE 解析</h4>
+              <div class="text-sm text-secondary mb-3">自定义解析器处理标准 SSE 格式</div>
+              <div class="bg-gray-50 rounded p-2 text-xs font-mono">
+                data: {&#34;choices&#34;:[{&#34;delta&#34;:{&#34;content&#34;:&#34;Hello&#34;}}]}
+              </div>
+            </div>
+
+            <div class="border rounded-lg p-4">
+              <h4 class="font-semibold mb-3 text-primary">UI 实时更新</h4>
+              <div class="text-sm text-secondary mb-3">StreamBuilder + AnimatedText 实现打字机效果</div>
+              <div class="bg-gray-50 rounded p-2 text-xs text-secondary">
+                逐字动画 + 智能滚动 + 光标闪烁
+              </div>
+            </div>
+
+            <div class="border rounded-lg p-4">
+              <h4 class="font-semibold mb-3 text-primary">错误处理</h4>
+              <div class="text-sm text-secondary mb-3">网络异常分类 + 指数退避重试</div>
+              <div class="bg-gray-50 rounded p-2 text-xs text-secondary">
+                自动重连 + 用户友好提示
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Core Modules -->
+      <section id="core-modules" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">核心功能模块实现</h2>
+
+        <!-- Conversation System -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">对话系统</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h4 class="font-semibold mb-4 text-primary">消息模型设计</h4>
+              <div class="bg-gray-50 rounded-lg p-4 font-mono text-xs">
+                <div class="text-gray-600">@HiveType(typeId: 1)</div>
+                <div class="text-blue-600">class Message {</div>
+                <div class="ml-2 text-green-600">@HiveField(0)</div>
+                <div class="ml-4">final String id;</div>
+                <div class="ml-2 text-green-600">@HiveField(1)</div>
+                <div class="ml-4">final MessageRole role;</div>
+                <div class="ml-2 text-green-600">@HiveField(2)</div>
+                <div class="ml-4">final String content;</div>
+                <div class="ml-2 text-green-600">@HiveField(3)</div>
+                <div class="ml-4">final DateTime timestamp;</div>
+                <div class="text-blue-600">}</div>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-4 text-primary">上下文压缩策略</h4>
+              <div class="space-y-3">
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="font-medium text-sm mb-1">滑动窗口</div>
+                  <div class="text-xs text-secondary">保留最近 K 条，简单有效</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="font-medium text-sm mb-1">摘要生成</div>
+                  <div class="text-xs text-secondary">轻量模型生成摘要，保留语义</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="font-medium text-sm mb-1">关键提取</div>
+                  <div class="text-xs text-secondary">提取用户明确引用的消息</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Multi-modal Input -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">多模态输入</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="border rounded-lg p-6">
+              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
+                <i class="fas fa-image text-blue-600"></i>
+              </div>
+              <h4 class="font-semibold mb-3">图片理解</h4>
+              <ul class="text-sm text-secondary space-y-1">
+                <li>• Vision API 集成</li>
+                <li>• 本地压缩优化</li>
+                <li>• Base64 编码</li>
+                <li>• 多模态消息格式</li>
+              </ul>
+            </div>
+
+            <div class="border rounded-lg p-6">
+              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
+                <i class="fas fa-microphone text-green-600"></i>
+              </div>
+              <h4 class="font-semibold mb-3">语音输入</h4>
+              <ul class="text-sm text-secondary space-y-1">
+                <li>• speech_to_text 插件</li>
+                <li>• 权限申请处理</li>
+                <li>• 实时语音识别</li>
+                <li>• 标点优化</li>
+              </ul>
+            </div>
+
+            <div class="border rounded-lg p-6">
+              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
+                <i class="fas fa-file-alt text-purple-600"></i>
+              </div>
+              <h4 class="font-semibold mb-3">文件解析</h4>
+              <ul class="text-sm text-secondary space-y-1">
+                <li>• PDF 文本提取</li>
+                <li>• Word 文档解析</li>
+                <li>• 代码文件处理</li>
+                <li>• 大文件分批处理</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <!-- Local Model Support -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">本地模型支持</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h4 class="font-semibold mb-4 text-primary">Ollama 对接</h4>
+              <div class="space-y-3">
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="font-medium text-sm mb-1">配置界面</div>
+                  <div class="text-xs text-secondary">端点 URL、模型选择、高级参数</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="font-medium text-sm mb-1">模型管理</div>
+                  <div class="text-xs text-secondary">动态拉取、流式进度、版本控制</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-4 text-primary">离线检测</h4>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="font-mono text-xs mb-2">ConnectivityService</div>
+                <div class="text-xs text-secondary mb-2">检测本地模型可用性</div>
+                <div class="text-xs text-gray-600">checkOllamaAvailable() → bool</div>
+              </div>
+              <p class="text-sm text-secondary mt-2">UI 适配：显示提示条，提供重试或切换选项</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Best Practices -->
+      <section id="best-practices" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">出行/配送类应用最佳实践</h2>
+
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-6 mb-8">
+          <div class="flex items-start">
+            <i class="fas fa-info-circle text-blue-400 mt-1 mr-3"></i>
+            <div>
+              <h4 class="font-semibold text-blue-800 mb-2">技术迁移说明</h4>
+              <p class="text-sm text-blue-700">
+                虽然 Kelivo 是 LLM 聊天应用，但其技术架构与出行/配送类应用有诸多共通之处。以下基于 Kelivo 的实践经验，推导可迁移的最佳实践。
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Map Integration -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">地图与定位集成</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">地图插件选型</h4>
+              <div class="space-y-3">
+                <div class="bg-gray-50 rounded p-3">
+                  <div class="font-medium text-sm mb-1">国内应用</div>
+                  <div class="text-xs text-secondary">amap_flutter_map 高德地图</div>
+                </div>
+                <div class="bg-gray-50 rounded p-3">
+                  <div class="font-medium text-sm mb-1">国际应用</div>
+                  <div class="text-xs text-secondary">google_maps_flutter</div>
+                </div>
+                <div class="bg-gray-50 rounded p-3">
+                  <div class="font-medium text-sm mb-1">开源方案</div>
+                  <div class="text-xs text-secondary">flutter_map + openstreetmap</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">实时定位</h4>
+              <ul class="text-sm text-secondary space-y-2">
+                <li>• geolocator 插件</li>
+                <li>• 前台高精度定位</li>
+                <li>• 后台位置更新</li>
+                <li>• 电量优化策略</li>
+              </ul>
+            </div>
+
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">轨迹绘制</h4>
+              <ul class="text-sm text-secondary space-y-2">
+                <li>• Polyline 动态更新</li>
+                <li>• 平滑动画效果</li>
+                <li>• 轨迹回放功能</li>
+                <li>• 性能优化处理</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="bg-gray-50 rounded-lg p-6">
+            <h4 class="font-semibold mb-3 text-primary">Kelivo 架构迁移启示</h4>
+            <p class="text-sm text-secondary">
+              多服务商抽象架构可直接迁移——定义
+              <code>MapService</code> 接口，实现
+              <code>AmapService</code>、
+              <code>GoogleMapService</code>，运行时根据区域切换
+            </p>
+          </div>
+        </div>
+
+        <!-- Order State Machine -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">订单状态机设计</h3>
+
+          <div class="bg-gray-50 rounded-lg p-6 mb-6">
+            <div class="mermaid-container">
+              <div class="mermaid-controls">
+                <button class="mermaid-control-btn zoom-in" title="放大">
+                  <i class="fas fa-search-plus"></i>
+                </button>
+                <button class="mermaid-control-btn zoom-out" title="缩小">
+                  <i class="fas fa-search-minus"></i>
+                </button>
+                <button class="mermaid-control-btn reset-zoom" title="重置">
+                  <i class="fas fa-expand-arrows-alt"></i>
+                </button>
+                <button class="mermaid-control-btn fullscreen" title="全屏查看">
+                  <i class="fas fa-expand"></i>
+                </button>
+              </div>
+              <div class="mermaid">
+                graph TD
+                A[&#34;待支付&#34;] --&gt; B[&#34;待接单&#34;]
+                B --&gt; C[&#34;取货中&#34;]
+                C --&gt; D[&#34;配送中&#34;]
+                D --&gt; E[&#34;待确认&#34;]
+                E --&gt; F[&#34;已完成&#34;]
+
+                A --&gt; G[&#34;已取消&#34;]
+                B --&gt; G
+                C --&gt; H[&#34;异常上报&#34;]
+                D --&gt; H
+                E --&gt; I[&#34;申诉中&#34;]
+
+                H --&gt; J[&#34;客服处理&#34;]
+                I --&gt; J
+                J --&gt; F
+                J --&gt; G
+
+                style A fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#1f2937
+                style B fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#1f2937
+                style C fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#1f2937
+                style D fill:#ddd6fe,stroke:#7c3aed,stroke-width:2px,color:#1f2937
+                style E fill:#f0f9ff,stroke:#0284c7,stroke-width:2px,color:#1f2937
+                style F fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#1f2937
+                style G fill:#fef2f2,stroke:#dc2626,stroke-width:2px,color:#1f2937
+                style H fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#1f2937
+                style I fill:#fce7f3,stroke:#be185d,stroke-width:2px,color:#1f2937
+                style J fill:#f1f5f9,stroke:#64748b,stroke-width:2px,color:#1f2937
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">推送通知方案</h4>
+              <div class="space-y-3">
+                <div class="bg-gray-50 rounded p-3">
+                  <div class="font-medium text-sm mb-1">firebase_messaging</div>
+                  <div class="text-xs text-secondary">国际应用，生态成熟</div>
+                </div>
+                <div class="bg-gray-50 rounded p-3">
+                  <div class="font-medium text-sm mb-1">极光推送</div>
+                  <div class="text-xs text-secondary">国内应用，通道稳定</div>
+                </div>
+                <div class="bg-gray-50 rounded p-3">
+                  <div class="font-medium text-sm mb-1">自建 WebSocket</div>
+                  <div class="text-xs text-secondary">高实时性，完全可控</div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-3 text-primary">实时同步架构</h4>
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="font-mono text-xs mb-2">客户端 ←→ 负载均衡</div>
+                <div class="font-mono text-xs mb-2">←→ WebSocket 集群</div>
+                <div class="font-mono text-xs mb-2">←→ 订单服务 ←→ 数据库</div>
+                <div class="font-mono text-xs">↓ 状态广播（发布订阅）</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Performance Optimization -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">性能优化模式</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">列表优化</h4>
+              <ul class="text-sm text-secondary space-y-2">
+                <li>• ListView.builder 按需构建</li>
+                <li>• 图片懒加载</li>
+                <li>• 内存缓存管理</li>
+                <li>• 分页加载机制</li>
+              </ul>
+              <div class="mt-3 text-xs text-gray-600">
+                Kelivo 消息列表 → 订单列表迁移
+              </div>
+            </div>
+
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">地图优化</h4>
+              <ul class="text-sm text-secondary space-y-2">
+                <li>• Marker 聚合算法</li>
+                <li>• 瓦片缓存策略</li>
+                <li>• 层级动态控制</li>
+                <li>• 内存管理优化</li>
+              </ul>
+            </div>
+
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">电量优化</h4>
+              <ul class="text-sm text-secondary space-y-2">
+                <li>• 定位精度动态调整</li>
+                <li>• 后台任务限制</li>
+                <li>• 地理围栏替代</li>
+                <li>• 批量上传策略</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Technical Details -->
+      <section id="technical-details" class="mb-16">
+        <h2 class="font-serif text-3xl font-bold mb-8 text-primary">特定技术实现细节</h2>
+
+        <!-- Internationalization -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">国际化（i18n）完整方案</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h4 class="font-semibold mb-4 text-primary">ARB 文件管理</h4>
+              <div class="bg-gray-50 rounded-lg p-4 font-mono text-xs">
+                <div class="text-gray-600 mb-2">l10n.yaml 配置：</div>
+                <div class="text-blue-600">arb-dir: lib/l10n</div>
+                <div class="text-blue-600">template-arb-file: app_en.arb</div>
+                <div class="text-blue-600">output-class: AppLocalizations</div>
+              </div>
+
+              <div class="mt-4 bg-gray-50 rounded-lg p-4">
+                <div class="text-gray-600 mb-2">app_en.arb 示例：</div>
+                <div class="text-green-600">{</div>
+                <div class="ml-2">&#34;@@locale&#34;: &#34;en&#34;,</div>
+                <div class="ml-2">&#34;appTitle&#34;: &#34;Kelivo&#34;,</div>
+                <div class="ml-2">&#34;sendMessage&#34;: &#34;Send&#34;,</div>
+                <div class="text-green-600">}</div>
+              </div>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-4 text-primary">动态语言切换</h4>
+              <div class="bg-gray-50 rounded-lg p-4 font-mono text-xs mb-4">
+                <div class="text-blue-600">LocaleProvider</div>
+                <div class="text-green-600">setLocale(Locale locale)</div>
+                <div class="text-green-600">notifyListeners()</div>
+              </div>
+
+              <div class="bg-gray-50 rounded-lg p-4">
+                <div class="font-medium text-sm mb-2">RTL 语言适配</div>
+                <div class="text-xs text-secondary mb-2">阿拉伯语、希伯来语等从右到左语言</div>
+                <div class="font-mono text-xs">Directionality(</div>
+                <div class="font-mono text-xs ml-2">textDirection: TextDirection.rtl</div>
+                <div class="font-mono text-xs">)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Theme System -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">主题系统深度定制</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">Material 3 适配</h4>
+              <ul class="text-sm text-secondary space-y-2">
+                <li>• 动态配色提取</li>
+                <li>• 系统主题跟随</li>
+                <li>• 组件主题覆盖</li>
+                <li>• 自定义主题扩展</li>
+              </ul>
+            </div>
+
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">自定义组件主题</h4>
+              <div class="bg-gray-50 rounded p-3">
+                <div class="font-mono text-xs">ChatBubbleTheme</div>
+                <div class="font-mono text-xs text-secondary">extends ThemeExtension</div>
+              </div>
+              <div class="mt-2 text-xs text-secondary">聊天专属样式主题化</div>
+            </div>
+
+            <div class="border rounded-lg p-6">
+              <h4 class="font-semibold mb-3 text-primary">系统主题监听</h4>
+              <div class="bg-gray-50 rounded p-3">
+                <div class="font-mono text-xs">onPlatformBrightnessChanged</div>
+              </div>
+              <div class="mt-2 text-xs text-secondary">动态响应系统主题变化</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security &amp; Privacy -->
+        <div class="bg-white rounded-xl p-8 shadow-sm border mb-8">
+          <h3 class="font-serif text-xl font-semibold mb-6">安全与隐私合规</h3>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div>
+              <h4 class="font-semibold mb-4 text-primary">证书固定（SSL Pinning）</h4>
+              <div class="bg-gray-50 rounded-lg p-4 font-mono text-xs">
+                <div class="text-gray-600 mb-2">CertificatePinning</div>
+                <div class="text-blue-600">allowedSHAFingerprints: [</div>
+                <div class="text-green-600 ml-2">&#39;sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAA=&#39;</div>
+                <div class="text-blue-600">]</div>
+              </div>
+              <p class="text-sm text-secondary mt-2">防止中间人攻击</p>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-4 text-primary">隐私协议</h4>
+              <div class="space-y-3">
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="font-medium text-sm mb-1">首次启动流程</div>
+                  <div class="text-xs text-secondary">隐私协议弹窗 → 用户同意</div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-3">
+                  <div class="font-medium text-sm mb-1">GDPR 合规</div>
+                  <div class="text-xs text-secondary">数据透明、删除权、导出功能</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 bg-gray-50 rounded-lg p-6">
+            <h4 class="font-semibold mb-3 text-primary">数据脱敏</h4>
+            <div class="font-mono text-xs">
+              <div class="text-blue-600">class SensitiveDataFilter</div>
+              <div class="text-blue-600">_containsSensitivePattern(message)</div>
+              <div class="text-gray-600">// 过滤 API 密钥、手机号等</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="border-t pt-8 pb-16">
+        <div class="text-center text-secondary">
+          <p class="mb-2">Kelivo 项目深度解析与技术指南</p>
+          <p class="text-sm">
+            基于 Flutter 3.x 的跨平台 LLM 聊天客户端技术实践
+          </p>
+          <div class="mt-4">
+            <a href="https://github.com/Chevey339/kelivo" class="text-accent hover:underline">
+              <i class="fab fa-github mr-1"></i>GitHub Repository
+            </a>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            themeVariables: {
+                primaryColor: '#dbeafe',
+                primaryTextColor: '#1f2937',
+                primaryBorderColor: '#1e40af',
+                lineColor: '#3b82f6',
+                secondaryColor: '#dcfce7',
+                tertiaryColor: '#fef3c7',
+                background: '#ffffff',
+                mainBkg: '#ffffff',
+                secondBkg: '#f8fafc',
+                tertiaryBkg: '#f1f5f9',
+                nodeBorder: '#1e40af',
+                clusterBkg: '#f8fafc',
+                clusterBorder: '#64748b',
+                defaultLinkColor: '#3b82f6',
+                titleColor: '#1f2937',
+                edgeLabelBackground: '#ffffff',
+                nodeTextColor: '#1f2937',
+                // Enhanced contrast colors
+                cScale0: '#dbeafe',
+                cScale1: '#dcfce7', 
+                cScale2: '#fef3c7',
+                cScale3: '#fce7f3',
+                cScale4: '#ddd6fe',
+                cScale5: '#f0f9ff',
+                cScale6: '#f0fdf4',
+                cScale7: '#fefce8'
+            },
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'basis',
+                padding: 20
+            },
+            sequence: {
+                useMaxWidth: false,
+                wrap: true
+            },
+            gantt: {
+                useMaxWidth: false
+            }
+        });
+
+        // Initialize Mermaid Controls for zoom and pan
+        function initializeMermaidControls() {
+            const containers = document.querySelectorAll('.mermaid-container');
+
+            containers.forEach(container => {
+            const mermaidElement = container.querySelector('.mermaid');
+            let scale = 1;
+            let isDragging = false;
+            let startX, startY, translateX = 0, translateY = 0;
+
+            // 触摸相关状态
+            let isTouch = false;
+            let touchStartTime = 0;
+            let initialDistance = 0;
+            let initialScale = 1;
+            let isPinching = false;
+
+            // Zoom controls
+            const zoomInBtn = container.querySelector('.zoom-in');
+            const zoomOutBtn = container.querySelector('.zoom-out');
+            const resetBtn = container.querySelector('.reset-zoom');
+            const fullscreenBtn = container.querySelector('.fullscreen');
+
+            function updateTransform() {
+                mermaidElement.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+
+                if (scale > 1) {
+                container.classList.add('zoomed');
+                } else {
+                container.classList.remove('zoomed');
+                }
+
+                mermaidElement.style.cursor = isDragging ? 'grabbing' : 'grab';
+            }
+
+            if (zoomInBtn) {
+                zoomInBtn.addEventListener('click', () => {
+                scale = Math.min(scale * 1.25, 4);
+                updateTransform();
+                });
+            }
+
+            if (zoomOutBtn) {
+                zoomOutBtn.addEventListener('click', () => {
+                scale = Math.max(scale / 1.25, 0.3);
+                if (scale <= 1) {
+                    translateX = 0;
+                    translateY = 0;
+                }
+                updateTransform();
+                });
+            }
+
+            if (resetBtn) {
+                resetBtn.addEventListener('click', () => {
+                scale = 1;
+                translateX = 0;
+                translateY = 0;
+                updateTransform();
+                });
+            }
+
+            if (fullscreenBtn) {
+                fullscreenBtn.addEventListener('click', () => {
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.msRequestFullscreen) {
+                    container.msRequestFullscreen();
+                }
+                });
+            }
+
+            // Mouse Events
+            mermaidElement.addEventListener('mousedown', (e) => {
+                if (isTouch) return; // 如果是触摸设备，忽略鼠标事件
+
+                isDragging = true;
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
+                mermaidElement.style.cursor = 'grabbing';
+                updateTransform();
+                e.preventDefault();
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (isDragging && !isTouch) {
+                translateX = e.clientX - startX;
+                translateY = e.clientY - startY;
+                updateTransform();
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isDragging && !isTouch) {
+                isDragging = false;
+                mermaidElement.style.cursor = 'grab';
+                updateTransform();
+                }
+            });
+
+            document.addEventListener('mouseleave', () => {
+                if (isDragging && !isTouch) {
+                isDragging = false;
+                mermaidElement.style.cursor = 'grab';
+                updateTransform();
+                }
+            });
+
+            // 获取两点之间的距离
+            function getTouchDistance(touch1, touch2) {
+                return Math.hypot(
+                touch2.clientX - touch1.clientX,
+                touch2.clientY - touch1.clientY
+                );
+            }
+
+            // Touch Events - 触摸事件处理
+            mermaidElement.addEventListener('touchstart', (e) => {
+                isTouch = true;
+                touchStartTime = Date.now();
+
+                if (e.touches.length === 1) {
+                // 单指拖动
+                isPinching = false;
+                isDragging = true;
+
+                const touch = e.touches[0];
+                startX = touch.clientX - translateX;
+                startY = touch.clientY - translateY;
+
+                } else if (e.touches.length === 2) {
+                // 双指缩放
+                isPinching = true;
+                isDragging = false;
+
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                initialDistance = getTouchDistance(touch1, touch2);
+                initialScale = scale;
+                }
+
+                e.preventDefault();
+            }, { passive: false });
+
+            mermaidElement.addEventListener('touchmove', (e) => {
+                if (e.touches.length === 1 && isDragging && !isPinching) {
+                // 单指拖动
+                const touch = e.touches[0];
+                translateX = touch.clientX - startX;
+                translateY = touch.clientY - startY;
+                updateTransform();
+
+                } else if (e.touches.length === 2 && isPinching) {
+                // 双指缩放
+                const touch1 = e.touches[0];
+                const touch2 = e.touches[1];
+                const currentDistance = getTouchDistance(touch1, touch2);
+
+                if (initialDistance > 0) {
+                    const newScale = Math.min(Math.max(
+                    initialScale * (currentDistance / initialDistance),
+                    0.3
+                    ), 4);
+                    scale = newScale;
+                    updateTransform();
+                }
+                }
+
+                e.preventDefault();
+            }, { passive: false });
+
+            mermaidElement.addEventListener('touchend', (e) => {
+                // 重置状态
+                if (e.touches.length === 0) {
+                isDragging = false;
+                isPinching = false;
+                initialDistance = 0;
+
+                // 延迟重置isTouch，避免鼠标事件立即触发
+                setTimeout(() => {
+                    isTouch = false;
+                }, 100);
+                } else if (e.touches.length === 1 && isPinching) {
+                // 从双指变为单指，切换为拖动模式
+                isPinching = false;
+                isDragging = true;
+
+                const touch = e.touches[0];
+                startX = touch.clientX - translateX;
+                startY = touch.clientY - translateY;
+                }
+
+                updateTransform();
+            });
+
+            mermaidElement.addEventListener('touchcancel', (e) => {
+                isDragging = false;
+                isPinching = false;
+                initialDistance = 0;
+
+                setTimeout(() => {
+                isTouch = false;
+                }, 100);
+
+                updateTransform();
+            });
+
+            // Enhanced wheel zoom with better center point handling
+            container.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                const rect = container.getBoundingClientRect();
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+
+                const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                const newScale = Math.min(Math.max(scale * delta, 0.3), 4);
+
+                // Adjust translation to zoom towards center
+                if (newScale !== scale) {
+                const scaleDiff = newScale / scale;
+                translateX = translateX * scaleDiff;
+                translateY = translateY * scaleDiff;
+                scale = newScale;
+
+                if (scale <= 1) {
+                    translateX = 0;
+                    translateY = 0;
+                }
+
+                updateTransform();
+                }
+            });
+
+            // Initialize display
+            updateTransform();
+            });
+        }
+
+        // Call the function to initialize mermaid controls
+        initializeMermaidControls();
+
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Highlight current section in TOC
+        window.addEventListener('scroll', () => {
+            const sections = document.querySelectorAll('section[id]');
+            const navLinks = document.querySelectorAll('.toc-fixed a[href^="#"]');
+            
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - 100;
+                if (scrollY >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('text-accent', 'font-semibold');
+                if (link.getAttribute('href') === `#${current}`) {
+                    link.classList.add('text-accent', 'font-semibold');
+                }
+            });
+        });
+
+        // Add loading animation for images
+        document.querySelectorAll('img').forEach(img => {
+            img.addEventListener('load', function() {
+                this.style.opacity = '1';
+            });
+            img.style.opacity = '0';
+            img.style.transition = 'opacity 0.3s ease';
+        });
+    </script>
+  
+
+</body></html>
